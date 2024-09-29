@@ -6,6 +6,10 @@ from datetime import datetime
 # Criar conexão com PstgreSQL usando url de conexão Railway
 # Obtendo variável do bando de dados
 DATABASE_URL = os.getenv('DATABASE_URL')
+if DATABASE_URL is None:
+    raise Exception("A variável de ambiente DATABASE_URL não está configurada")
+else:
+    conn =  psycopg2.connect(DATABASE_URL)
 # Conectando ao banco de dados
 conn = psycopg2.connect(DATABASE_URL)
 c = conn.cursor()
