@@ -7,7 +7,7 @@ from datetime import datetime
 # Obtendo variável do bando de dados
 DATABASE_URL = os.getenv('postgresql://postgres:wdwtcqJcLZJlKWaxtruCTSFAgeaqJxRa@postgres.railway.internal:5432/railway')
 # Conectando ao banco de dados
-conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+conn = psycopg2.connect(DATABASE_URL)
 c = conn.cursor()
 
 # Criar tabela se não existir
