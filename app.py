@@ -3,15 +3,18 @@ import os
 import psycopg2
 from datetime import datetime
 
-# Criar conexão com PstgreSQL usando url de conexão Railway
-# Obtendo variável do bando de dados
+# Conexão com o banco de dados
 DATABASE_URL = os.getenv('DATABASE_URL')
+
 if DATABASE_URL is None:
-    raise Exception("A variável de ambiente DATABASE_URL não está configurada")
+    st.error("A variável de ambiente DATABASE_URL não está configurada.")
 else:
-    conn =  psycopg2.connect(DATABASE_URL)
-# Conectando ao banco de dados
-conn = psycopg2.connect(DATABASE_URL)
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        st.success("Conectado ao banco de dados com sucesso!")
+    except Exception as e:
+        st.error(f"Erro ao conectar: {e}")
+        
 c = conn.cursor()
 
 # Criar tabela se não existir
