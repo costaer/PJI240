@@ -3,12 +3,12 @@ import os
 import psycopg2
 from datetime import datetime
 
-# Conexão com o banco de dados
-DATABASE_URL = os.getenv('DATABASE_URL')
-
 # Inicialização das variáveis de conexão
 conn = None
 c = None
+
+# Conexão com o banco de dados
+DATABASE_URL = os.getenv('DATABASE_URL')
 
 if DATABASE_URL is None:
     st.error("A variável de ambiente DATABASE_URL não está configurada.")
