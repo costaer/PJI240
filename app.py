@@ -1,9 +1,13 @@
 import streamlit as st
-import sqlite3
+import os
+import psycopg2
 from datetime import datetime
 
-# Criar conexão com o banco de dados
-conn = sqlite3.connect('estoque.db')
+# Criar conexão com PstgreSQL usando url de conexão Railway
+# Obtendo variável do bando de dados
+DATABASE_URL = os.getnv('postgresql://postgres:wdwtcqJcLZJlKWaxtruCTSFAgeaqJxRa@postgres.railway.internal:5432/railway')
+# Conectando ao banco de dados
+conn = psycopg2.connect(DATABASE_URL, sslmode='require')
 c = conn.cursor()
 
 # Criar tabela se não existir
@@ -14,6 +18,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS produtos (
                 data_validade DATE,
                 quantidade INTEGER
             )''')
+conn.commit()
 
 # Lista de produtos disponíveis
 opcoes_produtos = ['Arroz', 'Feijão', 'Óleo', 'Açúcar', 'Café moído', 'Sal', 'Extrato de tomate',
