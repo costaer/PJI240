@@ -11,19 +11,22 @@ if DATABASE_URL is None:
 else:
     try:
         conn = psycopg2.connect(DATABASE_URL)
+        c = conn.cursor()
         st.success("Conectado ao banco de dados com sucesso!")
     except Exception as e:
         st.error(f"Erro ao conectar: {e}")
-        
-c = conn.cursor()
 
-# Criar tabela se não existir
-c.execute('''CREATE TABLE IF NOT EXISTS produtos (
-                id INTEGER PRIMARY KEY,
-                nome TEXT,
-                data_compra DATE,
-                data_validade DATE,
-                quantidade INTEGER
+st.title("Gerenciamento de estoque")
+
+# Se a conexão do bem-sucedida, execute o resto do código
+if 'conn' in locals():
+    # Criar tabela se não existir
+    c.execute('''CREATE TABLE IF NOT EXISTS produtos (
+                    id INTEGER PRIMARY KEY,
+                    nome TEXT,
+                    data_compra DATE,
+                    data_validade DATE,
+                    quantidade INTEGER
             )''')
 conn.commit()
 
