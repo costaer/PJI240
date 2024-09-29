@@ -5,7 +5,7 @@ from datetime import datetime
 
 # Criar conexão com PstgreSQL usando url de conexão Railway
 # Obtendo variável do bando de dados
-DATABASE_URL = os.getenv('postgresql://postgres:wdwtcqJcLZJlKWaxtruCTSFAgeaqJxRa@junction.proxy.rlwy.net:14170/railway')
+DATABASE_URL = os.getenv('DATABASE_URL')
 # Conectando ao banco de dados
 conn = psycopg2.connect(DATABASE_URL)
 c = conn.cursor()
