@@ -1,92 +1,122 @@
-# app.py
-
-from flask import Flask, render_template, request, redirect, url_for, flash
-from datetime import datetime, timedelta
+from flask import Flask, render_template, request, redirect, url_for, send_file
+import sqlite3
+import csv
+import os
+from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = 'supersecretkey'  # Chave de segurança para mensagens flash
 
-# Estoque e histórico mantidos em memória (lista simples)
-estoque = []
-historico = []
+# Variável de ambiente para o caminho do banco (Railway-friendly)
+DATABASE_URL = os.getenv('DATABASE_URL', 'cesta.db')
 
-# Lista de produtos disponíveis
-produtos_disponiveis = [
-    "Arroz", "Feijão", "Óleo", "Açúcar", "Café moído", "Sal", "Extrato de tomate",
-    "Vinagre", "Bolacha recheada", "Bolacha salgada", "Macarrão Espaguete",
-    "Macarrão parafuso", "Macarrão instantâneo", "Farinha de trigo", 
-    "Farinha temperada", "Achocolatado em pó", "Leite", "Goiabada", "Suco em pó", 
-    "Mistura para bolo", "Tempero", "Sardinha", "Creme dental", "Papel higiênico", 
-    "Sabonete", "Milharina"
-]
+# Função para conectar ao banco de dados
+def get_db_connection():
+    conn = sqlite3.connect(DATABASE_URL)
+    conn.row_factory = sqlite3.Row
+    return conn
 
-# Tipos de cestas básicas
-cesta_pequena = [
-    "Arroz", "Feijão", "Óleo", "Açúcar", "Café moído", "Sal", "Extrato de tomate",
-    "Bolacha recheada", "Macarrão Espaguete", "Farinha de trigo", 
-    "Farinha temperada", "Goiabada", "Suco em pó", "Sardinha", "Creme dental", 
-    "Papel higiênico", "Sabonete", "Milharina", "Tempero"
-]
+# Função para inicializar o banco se não existir
+def init_db():
+    if not os.path.exists(DATABASE_URL):
+        conn = get_db_connection()
+        conn.execute('''
+            CREATE TABLE produtos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome TEXT,
+                data_compra TEXT,
+                data_validade TEXT,
+                quantidade INTEGER
+            )
+        ''')
+        conn.execute('''
+            CREATE TABLE cestas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                codigo TEXT,
+                data_montagem TEXT,
+                tipo TEXT,
+                itens TEXT
+            )
+        ''')
+        conn.close()
 
-cesta_grande = cesta_pequena + [
-    "Vinagre", "Bolacha salgada", "Macarrão parafuso", "Macarrão instantâneo", 
-    "Achocolatado em pó", "Leite", "Mistura para bolo"
-]
+# Inicializa o banco
+init_db()
 
-def verificar_alertas():
-    """Verifica quais produtos estão próximos de vencer."""
-    hoje = datetime.today()
-    return [p for p in estoque if p['data_validade'] <= hoje + timedelta(days=7)]
+# Lista de produtos fixos em ordem alfabética
+PRODUTOS = sorted([
+    "Achocolatado em pó", "Arroz", "Açúcar", "Bolacha recheada", "Bolacha salgada",
+    "Café moído", "Creme dental", "Extrato de tomate", "Farinha de trigo", 
+    "Farinha temperada", "Feijão", "Goiabada", "Leite", "Macarrão Espaguete",
+    "Macarrão instantâneo", "Macarrão parafuso", "Milharina", "Mistura para bolo",
+    "Óleo", "Papel higiênico", "Sabonete", "Sal", "Sardinha", "Suco em pó",
+    "Tempero", "Vinagre"
+])
 
+# Página principal
 @app.route('/')
 def index():
-    alertas = verificar_alertas()
-    return render_template('index.html', estoque=estoque, alertas=alertas)
+    conn = get_db_connection()
+    produtos = conn.execute('SELECT * FROM produtos ORDER BY data_validade').fetchall()
+    cestas = conn.execute('SELECT * FROM cestas ORDER BY id DESC').fetchall()
+    conn.close()
+    return render_template('index.html', produtos=produtos, cestas=cestas, produtos_opcoes=PRODUTOS)
 
-@app.route('/adicionar', methods=['POST'])
-def adicionar():
-    """Adiciona um produto ao estoque."""
+# Rota para cadastrar produto
+@app.route('/cadastrar', methods=['POST'])
+def cadastrar():
     nome = request.form['nome']
-    data_compra = datetime.strptime(request.form['data_compra'], '%Y-%m-%d')
-    data_validade = datetime.strptime(request.form['data_validade'], '%Y-%m-%d')
+    data_compra = request.form['data_compra']
+    data_validade = request.form['data_validade']
     quantidade = int(request.form['quantidade'])
-    produto_id = request.form['produto_id']
 
-    estoque.append({
-        'id': produto_id,
-        'nome': nome,
-        'data_compra': data_compra,
-        'data_validade': data_validade,
-        'quantidade': quantidade
-    })
-    flash('Produto adicionado com sucesso!')
+    conn = get_db_connection()
+    conn.execute(
+        'INSERT INTO produtos (nome, data_compra, data_validade, quantidade) VALUES (?, ?, ?, ?)',
+        (nome, data_compra, data_validade, quantidade)
+    )
+    conn.commit()
+    conn.close()
     return redirect(url_for('index'))
 
-@app.route('/montar_cesta/<tipo>')
+# Rota para montar cestas
+@app.route('/montar_cesta/<tipo>', methods=['POST'])
 def montar_cesta(tipo):
-    """Monta uma cesta e atualiza o estoque."""
-    cesta = cesta_pequena if tipo == 'pequena' else cesta_grande
-    itens_cesta = []
+    data_montagem = datetime.now().strftime('%d%m%Y')
+    itens_pequena = [
+        'Arroz', 'Feijão', 'Óleo', 'Açúcar', 'Café moído', 'Sal', 'Extrato de tomate',
+        'Bolacha recheada', 'Macarrão Espaguete', 'Farinha de trigo', 'Farinha temperada',
+        'Goiabada', 'Suco em pó', 'Sardinha', 'Creme dental', 'Papel higiênico', 'Sabonete', 'Milharina', 'Tempero'
+    ]
+    itens_grande = itens_pequena + [
+        'Vinagre', 'Bolacha salgada', 'Macarrão parafuso', 'Macarrão instantâneo',
+        'Achocolatado em pó', 'Leite', 'Mistura para bolo'
+    ]
+    itens = itens_pequena if tipo == 'pequena' else itens_grande
+    codigo = f"{data_montagem}{str(len(itens)).zfill(3)}"
 
-    for nome in cesta:
-        produto = next((p for p in estoque if p['nome'] == nome and p['quantidade'] > 0), None)
-        if produto:
-            produto['quantidade'] -= 1
-            itens_cesta.append(produto)
+    conn = get_db_connection()
+    conn.execute(
+        'INSERT INTO cestas (codigo, data_montagem, tipo, itens) VALUES (?, ?, ?, ?)',
+        (codigo, data_montagem, tipo, ', '.join(itens))
+    )
+    conn.commit()
+    conn.close()
+    return redirect(url_for('index'))
 
-    historico.append({
-        'tipo': tipo,
-        'itens': itens_cesta,
-        'data': datetime.today()
-    })
+# Rota para baixar lista de uma cesta
+@app.route('/baixar/<int:id>')
+def baixar(id):
+    conn = get_db_connection()
+    cesta = conn.execute('SELECT * FROM cestas WHERE id = ?', (id,)).fetchone()
+    conn.close()
 
-    flash(f'Cesta {tipo} montada com sucesso!')
-    return redirect(url_for('historico_view'))
+    filename = f"cesta_{cesta['codigo']}.csv"
+    with open(filename, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['Código', 'Data', 'Tipo', 'Itens'])
+        writer.writerow([cesta['codigo'], cesta['data_montagem'], cesta['tipo'], cesta['itens']])
 
-@app.route('/historico')
-def historico_view():
-    """Exibe o histórico de cestas montadas."""
-    return render_template('historico.html', historico=historico)
+    return send_file(filename, as_attachment=True)
 
 if __name__ == '__main__':
     app.run(debug=True)

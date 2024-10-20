@@ -14,12 +14,12 @@ Estrutura do projeto
 
 PJI240/
 │
-├── app.py               # Arquivo principal com o código Flask
-├── templates/           # Diretório para os templates HTML
-│   ├── index.html       # Página inicial para gerenciar o estoque
-│   └── historico.html   # Página de histórico das cestas
-├── requirements.txt     # Dependências do projeto
-├── Procfile             # Arquivo para o Railway iniciar a aplicação
-└── static/              # (Opcional) Diretório para CSS e JS (não usado aqui)
+├── app.py              # Código principal
+├── templates/
+│   └── index.html      # Interface da aplicação
+├── static/
+│   └── style.css       # Estilos
+├── Procfile            # Arquivo para Railway
+└── requirements.txt    # Dependências
 
 <p>Link para testar a aplicação <a href="https://pji110-tpdtjavoykn9iebuyzbkab.streamlit.app/" target="_blank" rel="noopener noreferrer">Controle de estoque no StreamLit</a>.</p>

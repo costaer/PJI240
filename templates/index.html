@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Estoque - Cesta Básica</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="menu">
+        <h2>Controle de Estoque para Cesta Básica</h2>
+        <form action="/cadastrar" method="POST">
+            <select name="nome" required>
+                {% for produto in produtos_opcoes %}
+                    <option value="{{ produto }}">{{ produto }}</option>
+                {% endfor %}
+            </select>
+            <input type="date" name="data_compra" required>
+            <input type="date" name="data_validade" required>
+            <input type="number" name="quantidade" min="1" required>
+            <button type="submit">Cadastrar Produto</button>
+        </form>
+    </div>
+</body>
+</html>
