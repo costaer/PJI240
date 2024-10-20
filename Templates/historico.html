@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Histórico de Cestas</title>
+</head>
+<body>
+    <h1>Histórico de Cestas Montadas</h1>
+    <ul>
+        {% for pedido in historico %}
+            <li>{{ pedido.tipo }} - {{ pedido.data }}</li>
+            <ul>
+                {% for item in pedido.itens %}
+                    <li>{{ item.nome }} (ID: {{ item.id }})</li>
+                {% endfor %}
+            </ul>
+        {% endfor %}
+    </ul>
+</body>
+</html>
