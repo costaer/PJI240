@@ -22,8 +22,8 @@ c.execute('''CREATE TABLE IF NOT EXISTS historico_cestas (
                 id INTEGER PRIMARY KEY,
                 tipo_cesta TEXT,
                 data DATE,
-                itens TEXT,
-                codigo_cesta TEXT
+                codigo_cesta TEXT,
+                itens TEXT
             )''')
 
 # Lista de produtos disponíveis
@@ -68,18 +68,17 @@ def atualizar_quantidade_produto(produto_id, nova_quantidade):
     conn.commit()
 
 # Função para salvar o histórico de cestas
-def salvar_historico_cesta(tipo_cesta, itens):
-    codigo_cesta = str(uuid.uuid4())[:8]  # Gerar código de cesta único
-    c.execute('''INSERT INTO historico_cestas (tipo_cesta, data, itens, codigo_cesta) VALUES (?, ?, ?, ?)''',
-              (tipo_cesta, datetime.now().date(), ', '.join(itens), codigo_cesta))
+def salvar_historico_cesta(tipo_cesta, codigo_cesta, itens):
+    c.execute('''INSERT INTO historico_cestas (tipo_cesta, data, codigo_cesta, itens) VALUES (?, ?, ?, ?)''',
+              (tipo_cesta, datetime.now().date(), codigo_cesta, ', '.join(itens)))
     conn.commit()
-    return codigo_cesta  # Retornar o código da cesta
 
 # Função para gerar arquivo da cesta
 def gerar_arquivo_cesta(codigo_cesta, tipo_cesta, itens):
     filename = f'cesta_{codigo_cesta}.txt'
     with open(filename, 'w') as f:
         f.write(f'Tipo da Cesta: {tipo_cesta}\n')
+        f.write(f'Código da Cesta: {codigo_cesta}\n')
         f.write(f'Data: {datetime.now().date()}\n')
         f.write('Itens:\n')
         for item in itens:
@@ -121,7 +120,9 @@ if montar:
                  'Macarrão instantâneo', 'Farinha de trigo', 'Farinha temperada', 'Achocolatado em pó', 'Leite',
                  'Goiabada', 'Suco em pó', 'Mistura para bolo', 'Tempero', 'Sardinha', 'Creme dental',
                  'Papel higiênico', 'Sabonete']
-        
+
+    itens_cesta = []
+
     # Verificar se todos os itens da cesta estão disponíveis no estoque
     todos_disponiveis = True
     itens_faltantes = []
@@ -135,22 +136,24 @@ if montar:
         st.sidebar.error('Os seguintes itens estão faltando no estoque para completar a cesta: {}'.format(', '.join(itens_faltantes)))
     else:
         # Montar a cesta com os itens disponíveis
-        itens_cesta = []
         for item in cesta:
             produtos = buscar_produto_por_nome(item)
             if produtos:  # Verifica se o produto está disponível
                 produto_mais_proximo = produtos[0]  # Considerar apenas o primeiro produto
                 nova_quantidade = produto_mais_proximo[4] - 1
                 atualizar_quantidade_produto(produto_mais_proximo[0], nova_quantidade)
-                itens_cesta.append(f'{produto_mais_proximo[4]} x {produto_mais_proximo[2]} - Validade: {produto_mais_proximo[3]}')  # Adicionar descrição do item
+                itens_cesta.append(f'{produto_mais_proximo[4]} x {produto_mais_proximo[5]} - {produto_mais_proximo[2]} - Compra: {produto_mais_proximo[1]} - Validade: {produto_mais_proximo[3]}')  # Adicionar descrição do item
 
         # Exibir os itens da cesta
         st.subheader('Itens da Cesta:')
         for item in itens_cesta:
             st.write(item)
 
+        # Gerar um código de cesta único
+        codigo_cesta_gerado = str(uuid.uuid4())[:8]
+
         # Salvar histórico de cestas montadas e obter o código da cesta
-        codigo_cesta_gerado = salvar_historico_cesta(tipo_cesta, itens_cesta)
+        salvar_historico_cesta(tipo_cesta, codigo_cesta_gerado, itens_cesta)
 
         # Gerar arquivo da cesta e disponibilizar para download
         arquivo_cesta = gerar_arquivo_cesta(codigo_cesta_gerado, tipo_cesta, itens_cesta)
@@ -183,19 +186,19 @@ if historico_cestas:
     for registro in historico_cestas:
         col1, col2, col3 = st.columns([3, 1, 1])
         with col1:
-            st.write(f'Tipo: {registro[1]} - Data: {registro[2]} - Itens: {registro[3]}')
-        with col2:
-            st.write(f'Código: {registro[4]}')
-        with col3:
-            if st.button('Baixar Lista de Produtos', key=registro[4]):
-                arquivo_historico = f'historico_cesta_{registro[4]}.txt'
+            st.write(f'Tipo: {registro[1]} - Código: {registro[3]} - Data: {registro[2]}')
+            if st.button('Ver Itens', key=registro[3]):
+                st.write(f'Itens: {registro[4]}')
+                arquivo_historico = f'historico_cesta_{registro[3]}.txt'
                 with open(arquivo_historico, 'w') as f:
                     f.write(f'Tipo da Cesta: {registro[1]}\n')
+                    f.write(f'Código da Cesta: {registro[3]}\n')
                     f.write(f'Data: {registro[2]}\n')
                     f.write('Itens:\n')
-                    f.write(f'{registro[3]}\n')
+                    for item in registro[4].split(', '):
+                        f.write(f'- {item}\n')
                 with open(arquivo_historico, 'rb') as f:
-                    st.download_button(label='Baixar Histórico', data=f, file_name=arquivo_historico, mime='text/plain')
+                    st.download_button(label='Baixar Lista de Produtos', data=f, file_name=arquivo_historico, mime='text/plain')
 
 # Fechar conexão com o banco de dados
 conn.close()
