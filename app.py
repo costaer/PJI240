@@ -140,9 +140,10 @@ if montar:
             produtos = buscar_produto_por_nome(item)
             if produtos:  # Verifica se o produto está disponível
                 produto_mais_proximo = produtos[0]  # Considerar apenas o primeiro produto
-                nova_quantidade = produto_mais_proximo[4] - 1
-                atualizar_quantidade_produto(produto_mais_proximo[0], nova_quantidade)
-                itens_cesta.append(f'{produto_mais_proximo[4]} x {produto_mais_proximo[5]} - {produto_mais_proximo[2]} - Compra: {produto_mais_proximo[1]} - Validade: {produto_mais_proximo[3]}')  # Adicionar descrição do item
+                if produto_mais_proximo[4] > 0:  # Verifica se há quantidade disponível
+                    nova_quantidade = produto_mais_proximo[4] - 1
+                    atualizar_quantidade_produto(produto_mais_proximo[0], nova_quantidade)
+                    itens_cesta.append(f'1 x {produto_mais_proximo[5]} - Código: {produto_mais_proximo[4]} - Compra: {produto_mais_proximo[1]} - Validade: {produto_mais_proximo[3]}')  # Adicionar descrição do item
 
         # Exibir os itens da cesta
         st.subheader('Itens da Cesta:')
