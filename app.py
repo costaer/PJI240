@@ -38,7 +38,6 @@ opcoes_produtos.sort()  # Ordenar os produtos em ordem alfabética
 # Função para adicionar produto ao estoque ou atualizar quantidade
 def adicionar_produto(nome, data_compra, data_validade, quantidade):
     codigo_controle = str(uuid.uuid4())[:8]  # Gerar código de controle único
-    # Verificar se o produto já existe
     c.execute('''SELECT * FROM produtos WHERE nome = ? AND data_compra = ? AND data_validade = ?''',
               (nome, data_compra, data_validade))
     produto_existente = c.fetchone()
@@ -88,6 +87,7 @@ def salvar_historico_cesta(tipo_cesta, itens):
     c.execute('''INSERT INTO historico_cestas (tipo_cesta, data, itens, codigo_cesta) VALUES (?, ?, ?, ?)''',
               (tipo_cesta, datetime.now().date(), ', '.join(itens), codigo_cesta))
     conn.commit()
+    return codigo_cesta  # Retornar o código da cesta
 
 # Interface do Streamlit
 st.title('Controle de Estoque de Cesta Básica')
@@ -109,6 +109,8 @@ st.sidebar.header('Montar Cesta')
 opcoes_cesta = ['Pequena', 'Grande']
 tipo_cesta = st.sidebar.selectbox('Selecione o tipo de cesta:', opcoes_cesta)
 montar = st.sidebar.button('Montar Cesta')
+
+codigo_cesta_gerado = None
 
 if montar:
     if tipo_cesta == 'Pequena':
@@ -138,7 +140,7 @@ if montar:
         itens_cesta = []
         for item in cesta:
             produtos = buscar_produto_por_nome(item)
-            produto_mais_proximo = selecionar_proximos_validade(produtos, 1)[0]
+            produto_mais_proximo = produtos[0]  # Considerar apenas o primeiro produto
             nova_quantidade = produto_mais_proximo[4] - 1
             atualizar_quantidade_produto(produto_mais_proximo[0], nova_quantidade)
             itens_cesta.append((1, *produto_mais_proximo[1:]))  # Fixar a quantidade em 1
@@ -148,8 +150,8 @@ if montar:
         for item in itens_cesta:
             st.write(f'{item[0]} x {item[2]} - Compra: {item[1]} - Validade: {item[3]}')
 
-        # Salvar histórico de cestas montadas
-        salvar_historico_cesta(tipo_cesta, [item[2] for item in itens_cesta])
+        # Salvar histórico de cestas montadas e obter o código da cesta
+        codigo_cesta_gerado = salvar_historico_cesta(tipo_cesta, [item[2] for item in itens_cesta])
 
 # Exibir estoque
 st.header('Estoque:')
@@ -164,17 +166,18 @@ historico_cestas = c.fetchall()
 
 if historico_cestas:
     for registro in historico_cestas:
-        st.write(f'Tipo: {registro[1]} - Data: {registro[2]} - Itens: {registro[3]} - Código: {registro[4]}')
-else:
-    st.write('Nenhuma cesta montada ainda.')
-
-# Exportar lista de produtos de cada cesta montada
-exportar = st.button('Exportar Lista de Produtos de Cesta Montada')
-if exportar:
-    with open('produtos_cestas.txt', 'w') as f:
-        for registro in historico_cestas:
-            f.write(f'Tipo: {registro[1]} - Data: {registro[2]} - Itens: {registro[3]} - Código: {registro[4]}\n')
-    st.success('Lista de produtos exportada com sucesso!')
+        col1, col2, col3 = st.columns([3, 1, 1])
+        with col1:
+            st.write(f'Tipo: {registro[1]} - Data: {registro[2]} - Itens: {registro[3]}')
+        with col2:
+            st.write(f'Código: {registro[4]}')
+        with col3:
+            if registro[4] == codigo_cesta_gerado:  # Mostrar botão apenas para a cesta mais recente montada
+                if st.button('Exportar Lista de Produtos', key=registro[4]):
+                    with open(f'produtos_cesta_{registro[4]}.txt', 'w') as f:
+                        f.write(f'Produtos da Cesta {registro[4]}:\n')
+                        f.write(f'Tipo: {registro[1]} - Data: {registro[2]} - Itens: {registro[3]}\n')
+                    st.success('Lista de produtos exportada com sucesso!')
 
 # Fechar conexão com o banco de dados
 conn.close()
