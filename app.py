@@ -75,6 +75,17 @@ def salvar_historico_cesta(tipo_cesta, itens):
     conn.commit()
     return codigo_cesta  # Retornar o código da cesta
 
+# Função para gerar arquivo da cesta
+def gerar_arquivo_cesta(codigo_cesta, tipo_cesta, itens):
+    filename = f'cesta_{codigo_cesta}.txt'
+    with open(filename, 'w') as f:
+        f.write(f'Tipo da Cesta: {tipo_cesta}\n')
+        f.write(f'Data: {datetime.now().date()}\n')
+        f.write('Itens:\n')
+        for item in itens:
+            f.write(f'- {item}\n')
+    return filename
+
 # Interface do Streamlit
 st.title('Controle de Estoque de Cesta Básica')
 
@@ -97,6 +108,7 @@ tipo_cesta = st.sidebar.selectbox('Selecione o tipo de cesta:', opcoes_cesta)
 montar = st.sidebar.button('Montar Cesta')
 
 codigo_cesta_gerado = None
+cesta_itens = []
 
 if montar:
     if tipo_cesta == 'Pequena':
@@ -129,15 +141,15 @@ if montar:
             produto_mais_proximo = produtos[0]  # Considerar apenas o primeiro produto
             nova_quantidade = produto_mais_proximo[4] - 1
             atualizar_quantidade_produto(produto_mais_proximo[0], nova_quantidade)
-            itens_cesta.append((1, *produto_mais_proximo[1:]))  # Fixar a quantidade em 1
+            itens_cesta.append(f'{produto_mais_proximo[4]} x {produto_mais_proximo[2]} - Validade: {produto_mais_proximo[3]}')  # Adicionar descrição do item
         
-        # Exibir os itens da cesta
-        st.subheader('Itens da Cesta:')
-        for item in itens_cesta:
-            st.write(f'{item[0]} x {item[2]} - Compra: {item[1]} - Validade: {item[3]}')
-
         # Salvar histórico de cestas montadas e obter o código da cesta
         codigo_cesta_gerado = salvar_historico_cesta(tipo_cesta, [item[2] for item in itens_cesta])
+        
+        # Gerar arquivo da cesta e disponibilizar para download
+        arquivo_cesta = gerar_arquivo_cesta(codigo_cesta_gerado, tipo_cesta, itens_cesta)
+        with open(arquivo_cesta, 'rb') as f:
+            st.download_button(label='Baixar Cesta', data=f, file_name=arquivo_cesta, mime='text/plain')
 
 # Exibir estoque
 st.header('Estoque:')
@@ -153,7 +165,6 @@ for produto in produtos_proximos_validade:
 
 # Exibir o restante dos produtos em ordem alfabética
 produtos_restantes = sorted([produto for produto in produtos_estoque if produto not in produtos_proximos_validade], key=lambda x: x[2])
-
 for produto in produtos_restantes:
     st.write(f'{produto[4]} x {produto[2]} - Compra: {produto[1]} - Validade: {produto[3]} (Código: {produto[5]})')
 
@@ -170,8 +181,15 @@ if historico_cestas:
         with col2:
             st.write(f'Código: {registro[4]}')
         with col3:
-            if registro[4] == codigo_cesta_gerado:  # Mostrar botão apenas para a cesta mais recente montada
-                st.button('Visualizar Cesta', key=registro[0])
+            if st.button('Baixar Lista de Produtos', key=registro[4]):
+                arquivo_historico = f'historico_cesta_{registro[4]}.txt'
+                with open(arquivo_historico, 'w') as f:
+                    f.write(f'Tipo da Cesta: {registro[1]}\n')
+                    f.write(f'Data: {registro[2]}\n')
+                    f.write('Itens:\n')
+                    f.write(f'{registro[3]}\n')
+                with open(arquivo_historico, 'rb') as f:
+                    st.download_button(label='Baixar Histórico', data=f, file_name=arquivo_historico, mime='text/plain')
 
 # Fechar conexão com o banco de dados
 conn.close()
