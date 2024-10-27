@@ -134,18 +134,24 @@ if montar:
     if not todos_disponiveis:
         st.sidebar.error('Os seguintes itens estão faltando no estoque para completar a cesta: {}'.format(', '.join(itens_faltantes)))
     else:
-        # Montar a cesta com os itens disponíveis mais próximos da validade
+        # Montar a cesta com os itens disponíveis
         itens_cesta = []
         for item in cesta:
             produtos = buscar_produto_por_nome(item)
-            produto_mais_proximo = produtos[0]  # Considerar apenas o primeiro produto
-            nova_quantidade = produto_mais_proximo[4] - 1
-            atualizar_quantidade_produto(produto_mais_proximo[0], nova_quantidade)
-            itens_cesta.append(f'{produto_mais_proximo[4]} x {produto_mais_proximo[2]} - Validade: {produto_mais_proximo[3]}')  # Adicionar descrição do item
-        
+            if produtos:  # Verifica se o produto está disponível
+                produto_mais_proximo = produtos[0]  # Considerar apenas o primeiro produto
+                nova_quantidade = produto_mais_proximo[4] - 1
+                atualizar_quantidade_produto(produto_mais_proximo[0], nova_quantidade)
+                itens_cesta.append(f'{produto_mais_proximo[4]} x {produto_mais_proximo[2]} - Validade: {produto_mais_proximo[3]}')  # Adicionar descrição do item
+
+        # Exibir os itens da cesta
+        st.subheader('Itens da Cesta:')
+        for item in itens_cesta:
+            st.write(item)
+
         # Salvar histórico de cestas montadas e obter o código da cesta
-        codigo_cesta_gerado = salvar_historico_cesta(tipo_cesta, [item[2] for item in itens_cesta])
-        
+        codigo_cesta_gerado = salvar_historico_cesta(tipo_cesta, itens_cesta)
+
         # Gerar arquivo da cesta e disponibilizar para download
         arquivo_cesta = gerar_arquivo_cesta(codigo_cesta_gerado, tipo_cesta, itens_cesta)
         with open(arquivo_cesta, 'rb') as f:
