@@ -55,6 +55,11 @@ def buscar_produtos():
     c.execute('''SELECT * FROM produtos''')
     return c.fetchall()
 
+# Função para buscar produtos por nome
+def buscar_produto_por_nome(nome):
+    c.execute('''SELECT * FROM produtos WHERE nome = ?''', (nome,))
+    return c.fetchall()
+
 # Função para atualizar quantidade de produto no estoque
 def atualizar_quantidade_produto(produto_id, nova_quantidade):
     c.execute('''UPDATE produtos SET quantidade = ? WHERE id = ?''', (nova_quantidade, produto_id))
@@ -165,7 +170,7 @@ if historico_cestas:
         with col2:
             st.write(f'Código: {registro[4]}')
         with col3:
-            if registro[4] == codigo_cesta_gerado:  # Mostrar botão apenas para a cesta gerada
+            if registro[4] == codigo_cesta_gerado:  # Mostrar botão apenas para a cesta mais recente montada
                 st.button('Visualizar Cesta', key=registro[0])
 
 # Fechar conexão com o banco de dados
