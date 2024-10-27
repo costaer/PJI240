@@ -1,6 +1,7 @@
 import streamlit as st
 import sqlite3
 from datetime import datetime, timedelta
+import uuid
 
 # Criar conexão com o banco de dados
 conn = sqlite3.connect('estoque.db')
@@ -21,7 +22,8 @@ c.execute('''CREATE TABLE IF NOT EXISTS historico_cestas (
                 id INTEGER PRIMARY KEY,
                 tipo_cesta TEXT,
                 data DATE,
-                itens TEXT
+                itens TEXT,
+                codigo_cesta TEXT
             )''')
 
 # Lista de produtos disponíveis
@@ -34,7 +36,8 @@ opcoes_produtos = ['Arroz', 'Feijão', 'Óleo', 'Açúcar', 'Café moído', 'Sal
 opcoes_produtos.sort()  # Ordenar os produtos em ordem alfabética
 
 # Função para adicionar produto ao estoque ou atualizar quantidade
-def adicionar_produto(nome, data_compra, data_validade, quantidade, codigo_controle):
+def adicionar_produto(nome, data_compra, data_validade, quantidade):
+    codigo_controle = str(uuid.uuid4())[:8]  # Gerar código de controle único
     # Verificar se o produto já existe
     c.execute('''SELECT * FROM produtos WHERE nome = ? AND data_compra = ? AND data_validade = ?''',
               (nome, data_compra, data_validade))
@@ -79,21 +82,11 @@ def buscar_produto_por_nome(nome):
     c.execute('''SELECT * FROM produtos WHERE nome = ?''', (nome,))
     return c.fetchall()
 
-# Função para calcular a diferença de dias entre duas datas
-def diferenca_dias(data1, data2):
-    data1 = datetime.strptime(data1, "%Y-%m-%d")
-    data2 = datetime.strptime(data2, "%Y-%m-%d")
-    return abs((data2 - data1).days)
-
-# Função para selecionar produtos mais próximos da validade
-def selecionar_proximos_validade(produtos, quantidade):
-    produtos_ordenados = sorted(produtos, key=lambda x: x[3])
-    return produtos_ordenados[:quantidade]
-
 # Função para salvar o histórico de cestas
 def salvar_historico_cesta(tipo_cesta, itens):
-    c.execute('''INSERT INTO historico_cestas (tipo_cesta, data, itens) VALUES (?, ?, ?)''',
-              (tipo_cesta, datetime.now().date(), ', '.join(itens)))
+    codigo_cesta = str(uuid.uuid4())[:8]  # Gerar código de cesta único
+    c.execute('''INSERT INTO historico_cestas (tipo_cesta, data, itens, codigo_cesta) VALUES (?, ?, ?, ?)''',
+              (tipo_cesta, datetime.now().date(), ', '.join(itens), codigo_cesta))
     conn.commit()
 
 # Interface do Streamlit
@@ -105,11 +98,10 @@ nome_produto = st.sidebar.selectbox('Nome do Produto', opcoes_produtos)
 data_compra = st.sidebar.date_input('Data da Compra')
 data_validade = st.sidebar.date_input('Data de Validade')
 quantidade = st.sidebar.number_input('Quantidade', min_value=1, value=1)
-codigo_controle = st.sidebar.text_input('Código de Controle', value='', max_chars=10)
 adicionar = st.sidebar.button('Adicionar Produto')
 
 if adicionar:
-    adicionar_produto(nome_produto, data_compra, data_validade, quantidade, codigo_controle)
+    adicionar_produto(nome_produto, data_compra, data_validade, quantidade)
     st.sidebar.success('Produto adicionado com sucesso!')
 
 # Barra lateral para selecionar cesta
@@ -155,7 +147,7 @@ if montar:
         st.subheader('Itens da Cesta:')
         for item in itens_cesta:
             st.write(f'{item[0]} x {item[2]} - Compra: {item[1]} - Validade: {item[3]}')
-        
+
         # Salvar histórico de cestas montadas
         salvar_historico_cesta(tipo_cesta, [item[2] for item in itens_cesta])
 
@@ -163,7 +155,7 @@ if montar:
 st.header('Estoque:')
 produtos_estoque = buscar_produtos()
 for produto in produtos_estoque:
-    st.write(f'{produto[4]} x {produto[2]} - Compra: {produto[1]}  - Validade: {produto[3]} (Código: {produto[5]})')
+    st.write(f'{produto[4]} x {produto[2]} - Compra: {produto[1]} - Validade: {produto[3]} (Código: {produto[5]})')
 
 # Exibir histórico de cestas
 st.header('Histórico de Cestas Montadas:')
@@ -172,17 +164,17 @@ historico_cestas = c.fetchall()
 
 if historico_cestas:
     for registro in historico_cestas:
-        st.write(f'Tipo: {registro[1]} - Data: {registro[2]} - Itens: {registro[3]}')
+        st.write(f'Tipo: {registro[1]} - Data: {registro[2]} - Itens: {registro[3]} - Código: {registro[4]}')
 else:
     st.write('Nenhuma cesta montada ainda.')
 
-# Exportar histórico para .txt
-exportar = st.button('Exportar Histórico de Cestas para .txt')
+# Exportar lista de produtos de cada cesta montada
+exportar = st.button('Exportar Lista de Produtos de Cesta Montada')
 if exportar:
-    with open('historico_cestas.txt', 'w') as f:
+    with open('produtos_cestas.txt', 'w') as f:
         for registro in historico_cestas:
-            f.write(f'Tipo: {registro[1]} - Data: {registro[2]} - Itens: {registro[3]}\n')
-    st.success('Histórico exportado com sucesso!')
+            f.write(f'Tipo: {registro[1]} - Data: {registro[2]} - Itens: {registro[3]} - Código: {registro[4]}\n')
+    st.success('Lista de produtos exportada com sucesso!')
 
 # Fechar conexão com o banco de dados
 conn.close()
