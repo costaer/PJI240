@@ -229,11 +229,5 @@ if montar:
         for item in itens_cesta:
             st.write(f'{item[0]} x {item[2]} - Compra: {item[1]} - Validade: {item[3]}')
 
-# Exibir estoque
-st.header('Estoque:')
-produtos_estoque = buscar_produtos()
-for produto in produtos_estoque:
-    st.write(f'{produto[4]} x {produto[2]} - Compra: {produto[1]}  - Validade: {produto[3]}')
-
 # Fechar conexão com o banco de dados
 conn.close()
