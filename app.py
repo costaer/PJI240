@@ -35,6 +35,15 @@ c.execute('''CREATE TABLE IF NOT EXISTS itens_cesta (
                 FOREIGN KEY (produto_codigo) REFERENCES produtos(codigo)
             )''')
 
+# Lista de produtos disponíveis
+opcoes_produtos = ['Arroz', 'Feijão', 'Óleo', 'Açúcar', 'Café moído', 'Sal', 'Extrato de tomate',
+                   'Vinagre', 'Bolacha recheada', 'Bolacha salgada', 'Macarrão Espaguete',
+                   'Macarrão parafuso', 'Macarrão instantâneo', 'Farinha de trigo', 'Farinha temperada',
+                   'Achocolatado em pó', 'Leite', 'Goiabada', 'Suco em pó', 'Mistura para bolo', 'Tempero',
+                   'Sardinha', 'Creme dental', 'Papel higiênico', 'Sabonete', 'Milharina']
+
+opcoes_produtos.sort()
+
 # Função para gerar código único
 def gerar_codigo(prefixo):
     return f"{prefixo}-{random.randint(1000, 9999)}"
@@ -78,7 +87,7 @@ st.title('Controle de Estoque de Cesta Básica')
 
 # Barra lateral para cadastrar produtos
 st.sidebar.header('Cadastrar Produto')
-nome_produto = st.sidebar.selectbox('Nome do Produto', ["Arroz", "Feijão", "Óleo", "Açúcar", "Café moído"])  # Exemplo de produtos
+nome_produto = st.sidebar.selectbox('Nome do Produto', opcoes_produtos)
 data_compra = st.sidebar.date_input('Data da Compra')
 data_validade = st.sidebar.date_input('Data de Validade')
 quantidade = st.sidebar.number_input('Quantidade', min_value=1, value=1)
@@ -96,9 +105,15 @@ montar = st.sidebar.button('Montar Cesta')
 
 if montar:
     if tipo_cesta == 'Pequena':
-        cesta = ['Arroz', 'Feijão', 'Óleo', 'Açúcar', 'Café moído']
+        cesta = ['Arroz', 'Feijão', 'Óleo', 'Açúcar', 'Café moído', 'Sal', 'Extrato de tomate', 'Bolacha recheada',
+                 'Macarrão Espaguete', 'Farinha de trigo', 'Farinha temperada', 'Goiabada', 'Suco em pó', 'Sardinha',
+                 'Creme dental', 'Papel higiênico', 'Sabonete', 'Milharina', 'Tempero']
     else:
-        cesta = ['Arroz', 'Feijão', 'Óleo', 'Açúcar', 'Café moído', 'Bolacha', 'Leite', 'Macarrão']
+        cesta = ['Arroz', 'Feijão', 'Óleo', 'Açúcar', 'Café moído', 'Sal', 'Extrato de tomate', 'Vinagre',
+                 'Bolacha recheada', 'Bolacha salgada', 'Macarrão Espaguete', 'Macarrão parafuso',
+                 'Macarrão instantâneo', 'Farinha de trigo', 'Farinha temperada', 'Achocolatado em pó', 'Leite',
+                 'Goiabada', 'Suco em pó', 'Mistura para bolo', 'Tempero', 'Sardinha', 'Creme dental',
+                 'Papel higiênico', 'Sabonete']
         
     codigo_cesta = montar_cesta(cesta, tipo_cesta)
     st.sidebar.success(f'Cesta montada com sucesso! Código da Cesta: {codigo_cesta}')
@@ -107,17 +122,14 @@ if montar:
 st.header('Estoque:')
 produtos_estoque = buscar_produtos()
 for produto in produtos_estoque:
-    st.write(f'Código: {produto[1]} - {produto[2]} - Quantidade: {produto[5]} - Compra: {produto[3]} - Validade: {produto[4]}')
+    st.write(f'{produto[1]} - {produto[4]} x {produto[2]} - Compra: {produto[3]} - Validade: {produto[4]}')
 
 # Exibir cestas montadas
-st.header('Cestas Montadas:')
+st.sidebar.header('Cestas Montadas')
 c.execute('''SELECT * FROM cestas''')
 cestas_montadas = c.fetchall()
-if cestas_montadas:
-    for cesta in cestas_montadas:
-        st.write(f'Cesta {cesta[1]} ({cesta[2]}) - Data de Montagem: {cesta[3]}')
-else:
-    st.write("Nenhuma cesta montada no momento.")
+for cesta in cestas_montadas:
+    st.sidebar.write(f'Cesta {cesta[1]} ({cesta[2]}) - {cesta[3]}')
 
 # Fechar conexão com o banco de dados
 conn.close()
