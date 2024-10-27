@@ -50,7 +50,7 @@ def adicionar_produto(nome, data_compra, data_validade, quantidade):
                       VALUES (?, ?, ?, ?, ?)''', (nome, data_compra, data_validade, quantidade, codigo_controle))
     conn.commit()
 
-# Função para buscar todos os produtos ordenados por validade
+# Função para buscar todos os produtos, ordenados por validade e com alerta
 def buscar_produtos():
     c.execute('''SELECT * FROM produtos ORDER BY CASE WHEN data_validade <= ? THEN 0 ELSE 1 END, data_validade''',
               (datetime.now() + timedelta(days=10),))
@@ -62,24 +62,6 @@ def atualizar_quantidade_produto(produto_id, nova_quantidade):
     if nova_quantidade <= 0:
         c.execute('''DELETE FROM produtos WHERE id = ?''', (produto_id,))
     conn.commit()
-
-# Função para montar a cesta e encontrar itens faltantes
-def montar_cesta(cesta):
-    itens_cesta = []
-    itens_faltantes = []
-    for item in cesta:
-        produtos = buscar_produto_por_nome(item)
-        if not produtos:
-            itens_faltantes.append(item)
-        else:
-            produto = produtos[0]
-            itens_cesta.append((1, *produto[1:]))  # Fixar a quantidade em 1
-    return itens_cesta, itens_faltantes
-
-# Função para buscar produtos por nome
-def buscar_produto_por_nome(nome):
-    c.execute('''SELECT * FROM produtos WHERE nome = ?''', (nome,))
-    return c.fetchall()
 
 # Função para salvar o histórico de cestas
 def salvar_historico_cesta(tipo_cesta, itens):
@@ -156,8 +138,16 @@ if montar:
 # Exibir estoque
 st.header('Estoque:')
 produtos_estoque = buscar_produtos()
+produtos_proximos_validade = [produto for produto in produtos_estoque if datetime.strptime(produto[3], "%Y-%m-%d") <= datetime.now() + timedelta(days=10)]
+
+# Exibir produtos que estão prestes a vencer primeiro
+for produto in produtos_proximos_validade:
+    st.warning(f'{produto[4]} x {produto[2]} - Compra: {produto[1]} - Validade: {produto[3]} (Código: {produto[5]})')
+
+# Exibir o restante dos produtos
 for produto in produtos_estoque:
-    st.write(f'{produto[4]} x {produto[2]} - Compra: {produto[1]} - Validade: {produto[3]} (Código: {produto[5]})')
+    if produto not in produtos_proximos_validade:
+        st.write(f'{produto[4]} x {produto[2]} - Compra: {produto[1]} - Validade: {produto[3]} (Código: {produto[5]})')
 
 # Exibir histórico de cestas
 st.header('Histórico de Cestas Montadas:')
