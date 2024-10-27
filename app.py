@@ -11,7 +11,8 @@ DATABASE_URL = os.getenv('DATABASE_URL', 'cesta.db')
 
 # Função para conectar ao banco de dados
 def get_db_connection():
-    conn = sqlite3.connect(DATABASE_URL)
+    conn = sqlite3.connect'(DATABASE_URL')
+    cursor = conn.cursor()
     conn.row_factory = sqlite3.Row
     return conn
 
