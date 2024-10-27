@@ -50,10 +50,9 @@ def adicionar_produto(nome, data_compra, data_validade, quantidade):
                       VALUES (?, ?, ?, ?, ?)''', (nome, data_compra, data_validade, quantidade, codigo_controle))
     conn.commit()
 
-# Função para buscar todos os produtos, ordenados por validade e com alerta
+# Função para buscar todos os produtos
 def buscar_produtos():
-    c.execute('''SELECT * FROM produtos ORDER BY CASE WHEN data_validade <= ? THEN 0 ELSE 1 END, data_validade''',
-              (datetime.now() + timedelta(days=10),))
+    c.execute('''SELECT * FROM produtos''')
     return c.fetchall()
 
 # Função para atualizar quantidade de produto no estoque
@@ -138,16 +137,20 @@ if montar:
 # Exibir estoque
 st.header('Estoque:')
 produtos_estoque = buscar_produtos()
-produtos_proximos_validade = [produto for produto in produtos_estoque if datetime.strptime(produto[3], "%Y-%m-%d") <= datetime.now() + timedelta(days=10)]
+produtos_proximos_validade = sorted(
+    [produto for produto in produtos_estoque if datetime.strptime(produto[3], "%Y-%m-%d") <= datetime.now() + timedelta(days=7)],
+    key=lambda x: x[3]  # Ordenar por data de validade
+)
 
 # Exibir produtos que estão prestes a vencer primeiro
 for produto in produtos_proximos_validade:
     st.warning(f'{produto[4]} x {produto[2]} - Compra: {produto[1]} - Validade: {produto[3]} (Código: {produto[5]})')
 
-# Exibir o restante dos produtos
-for produto in produtos_estoque:
-    if produto not in produtos_proximos_validade:
-        st.write(f'{produto[4]} x {produto[2]} - Compra: {produto[1]} - Validade: {produto[3]} (Código: {produto[5]})')
+# Exibir o restante dos produtos em ordem alfabética
+produtos_restantes = sorted([produto for produto in produtos_estoque if produto not in produtos_proximos_validade], key=lambda x: x[2])
+
+for produto in produtos_restantes:
+    st.write(f'{produto[4]} x {produto[2]} - Compra: {produto[1]} - Validade: {produto[3]} (Código: {produto[5]})')
 
 # Exibir histórico de cestas
 st.header('Histórico de Cestas Montadas:')
@@ -162,12 +165,8 @@ if historico_cestas:
         with col2:
             st.write(f'Código: {registro[4]}')
         with col3:
-            if registro[4] == codigo_cesta_gerado:  # Mostrar botão apenas para a cesta mais recente montada
-                if st.button('Exportar Lista de Produtos', key=registro[4]):
-                    with open(f'produtos_cesta_{registro[4]}.txt', 'w') as f:
-                        f.write(f'Produtos da Cesta {registro[4]}:\n')
-                        f.write(f'Tipo: {registro[1]} - Data: {registro[2]} - Itens: {registro[3]}\n')
-                    st.success('Lista de produtos exportada com sucesso!')
+            if registro[4] == codigo_cesta_gerado:  # Mostrar botão apenas para a cesta gerada
+                st.button('Visualizar Cesta', key=registro[0])
 
 # Fechar conexão com o banco de dados
 conn.close()
