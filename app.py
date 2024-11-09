@@ -18,6 +18,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS produtos (
             )''')
 
 # Criar tabela para histórico de cestas
+# Função feita para o projeto integrador 2
 c.execute('''CREATE TABLE IF NOT EXISTS historico_cestas (
                 id INTEGER PRIMARY KEY,
                 tipo_cesta TEXT,
@@ -68,12 +69,14 @@ def atualizar_quantidade_produto(produto_id, nova_quantidade):
     conn.commit()
 
 # Função para salvar o histórico de cestas
+# Função feita para o projeto integrador 2
 def salvar_historico_cesta(tipo_cesta, codigo_cesta, itens):
     c.execute('''INSERT INTO historico_cestas (tipo_cesta, data, codigo_cesta, itens) VALUES (?, ?, ?, ?)''',
               (tipo_cesta, datetime.now().date(), codigo_cesta, ', '.join(itens)))
     conn.commit()
 
 # Função para gerar arquivo da cesta
+# Função feita para o projeto integrador 2
 def gerar_arquivo_cesta(codigo_cesta, tipo_cesta, itens):
     filename = f'cesta_{codigo_cesta}.txt'
     with open(filename, 'w') as f:
@@ -151,12 +154,15 @@ if montar:
             st.write(item)
 
         # Gerar um código de cesta único
+        # Função feita para o projeto integrador 2
         codigo_cesta_gerado = str(uuid.uuid4())[:8]
 
         # Salvar histórico de cestas montadas e obter o código da cesta
+        # Função feita para o projeto integrador 2
         salvar_historico_cesta(tipo_cesta, codigo_cesta_gerado, itens_cesta)
 
         # Gerar arquivo da cesta e disponibilizar para download
+        # Função feita para o projeto integrador 2
         arquivo_cesta = gerar_arquivo_cesta(codigo_cesta_gerado, tipo_cesta, itens_cesta)
         with open(arquivo_cesta, 'rb') as f:
             st.download_button(label='Baixar Cesta', data=f, file_name=arquivo_cesta, mime='text/plain')
@@ -166,12 +172,14 @@ st.header('Estoque:')
 produtos_estoque = buscar_produtos()
 produtos_proximos_validade = sorted(
     [produto for produto in produtos_estoque if datetime.strptime(produto[3], "%Y-%m-%d") <= datetime.now() + timedelta(days=7)],
-    key=lambda x: x[3]  # Ordenar por data de validade
+    key=lambda x: x[3]  # Ordenar por data de validade - Função feita para o projeto integrador 2
 )
 
 # Exibir produtos que estão prestes a vencer primeiro
+# Função feita para o projeto integrador 2
 for produto in produtos_proximos_validade:
-    st.warning(f'{produto[4]} x {produto[2]} - Compra: {produto[1]} - Validade: {produto[3]} (Código: {produto[5]})')
+    st.warning(f'{produto[4]} x {produto[2]} - Compra: {produto[1]} - Validade: 
+               {produto[3]} (Código: {produto[5]})')
 
 # Exibir o restante dos produtos em ordem alfabética
 produtos_restantes = sorted([produto for produto in produtos_estoque if produto not in produtos_proximos_validade], key=lambda x: x[2])
@@ -179,6 +187,7 @@ for produto in produtos_restantes:
     st.write(f'{produto[4]} x {produto[2]} - Compra: {produto[1]} - Validade: {produto[3]} (Código: {produto[5]})')
 
 # Exibir histórico de cestas
+# Função feita para o projeto integrador 2
 st.header('Histórico de Cestas Montadas:')
 c.execute('SELECT * FROM historico_cestas ORDER BY data DESC')
 historico_cestas = c.fetchall()
@@ -199,7 +208,8 @@ if historico_cestas:
                     for item in registro[4].split(', '):
                         f.write(f'- {item}\n')
                 with open(arquivo_historico, 'rb') as f:
-                    st.download_button(label='Baixar Lista de Produtos', data=f, file_name=arquivo_historico, mime='text/plain')
+                    st.download_button(label='Baixar Lista de Produtos', data=f, file_name=arquivo_historico, 
+                                       mime='text/plain')
 
 # Fechar conexão com o banco de dados
 conn.close()
