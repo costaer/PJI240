@@ -178,8 +178,7 @@ produtos_proximos_validade = sorted(
 # Exibir produtos que estão prestes a vencer primeiro
 # Função feita para o projeto integrador 2
 for produto in produtos_proximos_validade:
-    st.warning(f'{produto[4]} x {produto[2]} - Compra: {produto[1]} - Validade: 
-               {produto[3]} (Código: {produto[5]})')
+    st.warning(f'{produto[4]} x {produto[2]} - Compra: {produto[1]} - Validade: {produto[3]} (Código: {produto[5]})')
 
 # Exibir o restante dos produtos em ordem alfabética
 produtos_restantes = sorted([produto for produto in produtos_estoque if produto not in produtos_proximos_validade], key=lambda x: x[2])
@@ -208,8 +207,7 @@ if historico_cestas:
                     for item in registro[4].split(', '):
                         f.write(f'- {item}\n')
                 with open(arquivo_historico, 'rb') as f:
-                    st.download_button(label='Baixar Lista de Produtos', data=f, file_name=arquivo_historico, 
-                                       mime='text/plain')
+                    st.download_button(label='Baixar Lista de Produtos', data=f, file_name=arquivo_historico, mime='text/plain')
 
 # Fechar conexão com o banco de dados
 conn.close()
