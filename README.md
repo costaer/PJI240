@@ -1,7 +1,7 @@
 # PJI240
 Projeto integrador segundo semestre de 2024 - Univesp
 
-# Atualização do Desenvolvimento de um Framework de Gestão de Estoque para Otimização do Controle de Mercadorias em Empresas de Cestas Básicas para geração de banco de dados e alerta de validade dos produtos.
+# Desenvolvimento de Framework de sistema inteligente de alerta de Estoque em Empresa de Cesta Básica.
 
 ## Integrantes
 Elder Rodrigues da Costa <br>
